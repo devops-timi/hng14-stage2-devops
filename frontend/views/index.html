@@ -22,17 +22,26 @@
 
     async function submitJob() {
       const res = await fetch('/submit', { method: 'POST' });
+      if (!res.ok) {
+         document.getElementById('result').innerText = 'Request failed';
+         return;
+      }
       const data = await res.json();
       document.getElementById('result').innerText = `Submitted: ${data.job_id}`;
       jobIds.push(data.job_id);
       pollJob(data.job_id);
+
     }
 
     async function pollJob(id) {
       const res = await fetch(`/status/${id}`);
+      if (!res.ok) {
+        document.getElementById('result').innerText = 'Failed to fetch job status';
+        return;
+      }
       const data = await res.json();
       renderJob(id, data.status);
-      if (data.status !== 'completed') {
+      if (data.status !== 'completed' && data.status !== 'failed') {
         setTimeout(() => pollJob(id), 2000);
       }
     }
