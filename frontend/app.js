@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, 'views')));
 
 app.post('/submit', async (req, res) => {
   try {
-    const response = await axios.post(`${API_URL}/jobs`, {}, { timeout: 5000 });
+    const response = await axios.post(`${API_URL}/jobs`);
     res.json(response.data);
   } catch (err) {
     res.status(500).json({ error: "something went wrong" });
@@ -19,7 +19,7 @@ app.post('/submit', async (req, res) => {
 
 app.get('/status/:id', async (req, res) => {
   try {
-    const response = await axios.get(`${API_URL}/jobs/${req.params.id}`, { timeout: 5000 });
+    const response = await axios.get(`${API_URL}/jobs/${req.params.id}`);
     res.json(response.data);
   } catch (err) {
     res.status(500).json({ error: err.message });
