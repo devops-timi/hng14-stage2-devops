@@ -3,14 +3,14 @@ const axios = require('axios');
 const path = require('path');
 const app = express();
 
-const API_URL = "http://localhost:8000";
+const API_URL = process.env.API_URL;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'views')));
 
 app.post('/submit', async (req, res) => {
   try {
-    const response = await axios.post(`${API_URL}/jobs`);
+    const response = await axios.post(`${API_URL}/jobs`, {}, { timeout: 5000 });
     res.json(response.data);
   } catch (err) {
     res.status(500).json({ error: "something went wrong" });
@@ -19,13 +19,17 @@ app.post('/submit', async (req, res) => {
 
 app.get('/status/:id', async (req, res) => {
   try {
-    const response = await axios.get(`${API_URL}/jobs/${req.params.id}`);
+    const response = await axios.get(`${API_URL}/jobs/${req.params.id}`, { timeout: 5000 });
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "something went wrong" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.listen(3000, () => {
+app.get('/health', (req, res) => {
+  res.status(200).send('ok');
+});
+
+app.listen(3000, '0.0.0.0', () => {
   console.log('Frontend running on port 3000');
 });
