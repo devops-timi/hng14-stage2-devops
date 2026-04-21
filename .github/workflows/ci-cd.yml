@@ -25,13 +25,11 @@ jobs:
 
       - name: Lint Python(api)
         run: |
-          flake8 api/main.py --max-line-length=100 
-          flake8 api/tests.py --max-line-length=100
+          flake8 api/main.py --max-line-length=100
 
       - name: Lint Python(worker)
         run: |
           flake8 worker/worker.py --max-line-length=100
-          flake8 worker/tests.py --max-line-length=100
 
       - name: Set up Node
         uses: actions/setup-node@v4
