@@ -39,17 +39,17 @@ jobs:
           npm init -y
           npm install -g eslint
 
-       - name: Create ESLint config
-         run: |
-          cat > .eslintrc.json << 'EOF'
-          {
-            "env": { "node": true, "es2021": true },
-            "rules": {
-              "no-unused-vars": "warn",
-              "no-undef": "error"
-            }
-          }
-          EOF
+      - name: Create ESLint config
+        run: |
+         cat > .eslintrc.json << 'EOF'
+         {
+           "env": { "node": true, "es2021": true },
+           "rules": {
+             "no-unused-vars": "warn",
+             "no-undef": "error"
+           }
+         }
+         EOF
 
       - name: Lint JavaScript(frontend)
         run: eslint frontend/app.js
