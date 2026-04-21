@@ -2,7 +2,7 @@ import redis
 import time
 import os
 import signal
-import sys 
+import sys
 
 
 r = redis.Redis(
@@ -13,9 +13,10 @@ r = redis.Redis(
 
 
 def shutdown(sig, frame):   # ADD
-    sys.exit(0)             # ADD
+    sys.exit(0)            # ADD
 
-signal.signal(signal.SIGTERM, shutdown) 
+
+signal.signal(signal.SIGTERM, shutdown)
 
 
 def process_job(job_id):
@@ -30,3 +31,4 @@ while True:
     if job:
         _, job_id = job
         process_job(job_id.decode())
+        
