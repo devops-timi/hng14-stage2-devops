@@ -2,13 +2,18 @@ import redis
 import time
 import os
 import signal
-
+import sys 
 
 r = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
     port=int(os.getenv("REDIS_PORT", 6379)),
     password=os.getenv("REDIS_PASSWORD"),
 )
+
+def shutdown(sig, frame):   # ADD
+    sys.exit(0)             # ADD
+
+signal.signal(signal.SIGTERM, shutdown) 
 
 
 def process_job(job_id):
