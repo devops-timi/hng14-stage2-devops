@@ -37,8 +37,8 @@ jobs:
       - name: Create ESLint config
         run: |
          cat > eslint.config.js << 'EOF'
-         import js from "@eslint/js";
-         export default [
+         const js = require("@eslint/js");
+         module.exports = [
           js.configs.recommended,
           {
             languageOptions: {
