@@ -1,13 +1,21 @@
-FROM python:3.11-slim
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY requirements.txt .
+RUN pip install --prefix=/install --no-cache-dir -r requirements.txt
+
+FROM python:3.12-slim AS production
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
+COPY main.py .
 
 RUN useradd -m appuser
 USER appuser
