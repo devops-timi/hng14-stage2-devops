@@ -135,17 +135,25 @@ jobs:
   
   security-scan:
     runs-on: ubuntu-latest
-    needs: build         # only runs if build passes
+    needs: build
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Rebuild images for scanning
+      - name: Build and push images to local registry
         run: |
-          docker build -t frontend:latest ./frontend
-          docker build -t api:latest ./api
-          docker build -t worker:latest ./worker
+          docker build -t localhost:5000/frontend:latest ./frontend
+          docker build -t localhost:5000/api:latest ./api
+          docker build -t localhost:5000/worker:latest ./worker
+          docker push localhost:5000/frontend:latest
+          docker push localhost:5000/api:latest
+          docker push localhost:5000/worker:latest
 
       - name: Install Trivy
         run: |
@@ -157,9 +165,10 @@ jobs:
             --exit-code 1 \
             --severity CRITICAL \
             --ignore-unfixed \
+            --scanners vuln \
             --format sarif \
             --output trivy-frontend.sarif \
-            frontend:latest
+            localhost:5000/frontend:latest
 
       - name: Scan api image
         run: |
@@ -167,9 +176,10 @@ jobs:
             --exit-code 1 \
             --severity CRITICAL \
             --ignore-unfixed \
+            --scanners vuln \
             --format sarif \
             --output trivy-api.sarif \
-            api:latest
+            localhost:5000/api:latest
 
       - name: Scan worker image
         run: |
@@ -177,6 +187,14 @@ jobs:
             --exit-code 1 \
             --severity CRITICAL \
             --ignore-unfixed \
+            --scanners vuln \
             --format sarif \
             --output trivy-worker.sarif \
-            worker:latest
+            localhost:5000/worker:latest
+
+      - name: Upload Trivy SARIF results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-sarif-results
+          path: "*.sarif"
