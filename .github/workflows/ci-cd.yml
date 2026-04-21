@@ -1,4 +1,4 @@
-name: Deploy Containerized App with Nginx
+name: Lint, Test, Build, and Security Scan multi-service application
 on:
   push:
     branches:
@@ -146,6 +146,10 @@ jobs:
           docker build -t frontend:latest ./frontend
           docker build -t api:latest ./api
           docker build -t worker:latest ./worker
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Scan frontend image
         run: |
