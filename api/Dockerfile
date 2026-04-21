@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u12 && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m appuser
 USER appuser
