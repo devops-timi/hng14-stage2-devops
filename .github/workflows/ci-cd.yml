@@ -24,7 +24,7 @@ jobs:
           pip install flake8  
 
       - name: Lint Python(api)
-        run: flake8 api/main.py worker/main.py --max-line-length=100 
+        run: flake8 api/main.py --max-line-length=100 
 
       - name: Lint Python(worker)
         run: flake8 worker/worker.py --max-line-length=100
@@ -35,10 +35,12 @@ jobs:
           node-version: "18"
 
       - name: Install ESLint
-        run: npm install -g eslint
+        run: |
+          npm init -y
+          npm install -g eslint
 
        - name: Create ESLint config
-       - run: |
+         run: |
           cat > .eslintrc.json << 'EOF'
           {
             "env": { "node": true, "es2021": true },
@@ -50,7 +52,7 @@ jobs:
           EOF
 
       - name: Lint JavaScript(frontend)
-      - run: eslint frontend/app.js
+        run: eslint frontend/app.js
 
       - name: Install hadolint
         run: |
