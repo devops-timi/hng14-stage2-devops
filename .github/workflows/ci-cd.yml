@@ -211,7 +211,7 @@ jobs:
         env:
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           APP_ENV: ${{ secrets.APP_ENV }}
-        run: docker compose up -d --build
+        run: docker compose -f docker-compose.yml up -d --build
 
       - name: Wait for all services to be healthy
         run: |
@@ -260,4 +260,4 @@ jobs:
 
       - name: Tear down stack
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml down -v
