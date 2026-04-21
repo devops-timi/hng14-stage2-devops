@@ -111,6 +111,8 @@ jobs:
         with:
           context: ./frontend
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             localhost:5000/frontend:${{ github.sha }}
             localhost:5000/frontend:latest
@@ -120,6 +122,8 @@ jobs:
         with:
           context: ./api
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             localhost:5000/api:${{ github.sha }}
             localhost:5000/api:latest
@@ -128,6 +132,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./worker
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           push: true
           tags: |
             localhost:5000/worker:${{ github.sha }}
@@ -213,51 +219,63 @@ jobs:
           APP_ENV: ${{ secrets.APP_ENV }}
         run: docker compose up -d --build
 
-      - name: Wait for all services to be healthy
+      - name: Run integration test
         run: |
-          timeout 120 bash -c '
-            until \
-              docker compose ps | grep "redis" | grep -q "healthy" && \
-              docker compose ps | grep "api" | grep -q "healthy" && \
-              docker compose ps | grep "frontend" | grep -q "healthy"; do
-              echo "Waiting for services..."
-              docker compose ps
-              sleep 5
-            done
-          '
-          echo "All services healthy"
-
-      - name: Submit a job through frontend
-        run: |
-          JOB_ID=$(curl -s -X POST http://localhost:3000/submit | \
-            python3 -c "import sys,json; print(json.load(sys.stdin)['job_id'])")
-          echo "Submitted job: $JOB_ID"
-          echo "JOB_ID=$JOB_ID" >> $GITHUB_ENV
-
-      - name: Poll until job completes
-        run: |
-          timeout 60 bash -c '
-            while true; do
-              STATUS=$(curl -s http://localhost:3000/status/$JOB_ID | \
-                python3 -c "import sys,json; print(json.load(sys.stdin)[\"status\"])")
-              echo "Current status: $STATUS"
-              if [ "$STATUS" = "completed" ]; then
-                break
-              fi
-              sleep 2
-            done
-          '
-
-      - name: Assert final status is completed
-        run: |
-          STATUS=$(curl -s http://localhost:3000/status/$JOB_ID | \
-            python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
-          if [ "$STATUS" != "completed" ]; then
-            echo "FAILED: expected completed, got $STATUS"
-            exit 1
-          fi
-          echo "PASSED: job status is $STATUS"
+          chmod +x integration.sh
+          ./integration.sh
 
       - name: Tear down stack
         if: always()
         run: docker compose down -v
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: integration-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy with rolling update
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ~/hng14-stage2-devops
+
+            git pull origin main
+
+            rolling_update() {
+              SERVICE=$1
+              echo "Starting rolling update for $SERVICE"
+
+              # Build new image
+              docker compose build $SERVICE
+
+              # Start new container
+              docker compose up -d --no-deps $SERVICE
+
+              # Wait up to 60 seconds for health check to pass
+              SECONDS=0
+              until docker compose ps $SERVICE | grep -q "healthy"; do
+                if [ $SECONDS -ge 60 ]; then
+                  echo "Health check failed for $SERVICE after 60s — aborting, old container kept"
+                  exit 1
+                fi
+                echo "Waiting for $SERVICE to be healthy... ($SECONDS s)"
+                sleep 3
+              done
+
+              echo "$SERVICE is healthy"
+            }
+
+            # Update in dependency order
+            rolling_update redis
+            rolling_update api
+            rolling_update worker
+            rolling_update frontend
+
+            echo "Deploy complete"
