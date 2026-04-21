@@ -34,30 +34,6 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Create ESLint config
-        run: |
-         cat > eslint.config.js << 'EOF'
-         const js = require("@eslint/js");
-         module.exports = [
-          js.configs.recommended,
-          {
-            languageOptions: {
-              ecmaVersion: 2021,
-              globals: {
-                require: "readonly",
-                process: "readonly",
-                console: "readonly",
-                __dirname: "readonly"
-              }
-            },
-            rules: {
-              "no-unused-vars": "warn",
-              "no-undef": "error"
-            }
-          }
-         ];
-         EOF
-
       - name: Install ESLint
         run: |
           npm install -g eslint
