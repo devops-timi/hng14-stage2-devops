@@ -24,10 +24,14 @@ jobs:
           pip install flake8  
 
       - name: Lint Python(api)
-        run: flake8 api/main.py --max-line-length=100 
+        run: |
+          flake8 api/main.py --max-line-length=100 
+          flake8 api/tests.py --max-line-length=100
 
       - name: Lint Python(worker)
-        run: flake8 worker/worker.py --max-line-length=100
+        run: |
+          flake8 worker/worker.py --max-line-length=100
+          flake8 worker/tests.py --max-line-length=100
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -70,13 +74,17 @@ jobs:
       - name: Install Test Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install pytest pytest-cov httpx
           pip install -r api/requirements.txt
 
-      - name: Run API Tests
-        run: pytest api/tests.py
+      - name: Run tests with coverage
+        run: |
+          pytest tests/test_api.py -v --cov=api --cov-report=xml --cov-report=term
 
-      - name: Run Worker Tests
-        run: pytest worker/tests.py
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
 
   
