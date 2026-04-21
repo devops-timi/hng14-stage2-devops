@@ -2,7 +2,7 @@ name: Deploy Containerized App with Nginx
 on:
   push:
     branches:
-      - main  
+      - main
 
 jobs:
   lint:
