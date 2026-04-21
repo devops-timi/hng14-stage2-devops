@@ -60,11 +60,10 @@ jobs:
 
       - name: Install ESLint
         run: |
-          npm init -y
           npm install -g eslint
 
       - name: Lint JavaScript(frontend)
-        run: npx eslint frontend/app.js
+        run: eslint frontend/app.js
 
       - name: Install hadolint
         run: |
