@@ -4,11 +4,13 @@ import os
 import signal
 import sys 
 
+
 r = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
     port=int(os.getenv("REDIS_PORT", 6379)),
     password=os.getenv("REDIS_PASSWORD"),
 )
+
 
 def shutdown(sig, frame):   # ADD
     sys.exit(0)             # ADD
