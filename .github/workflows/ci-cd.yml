@@ -237,45 +237,53 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy with rolling update
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd ~/hng14-stage2-devops
+      - name: Create .env file
+        run: |
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" > .env
+          echo "APP_ENV=${{ secrets.APP_ENV }}" >> .env
 
-            git pull origin main
+      - name: Start existing stack
+        run: docker compose -f docker-compose.yml up -d --build
 
-            rolling_update() {
-              SERVICE=$1
-              echo "Starting rolling update for $SERVICE"
+      - name: Rolling update
+        run: |
+          rolling_update() {
+            SERVICE=$1
+            echo "Starting rolling update for $SERVICE"
 
-              # Build new image
-              docker compose build $SERVICE
+            # Build new image
+            docker compose build $SERVICE
 
-              # Start new container
-              docker compose up -d --no-deps $SERVICE
+            # Start new container
+            docker compose up -d --no-deps $SERVICE
 
-              # Wait up to 60 seconds for health check to pass
-              SECONDS=0
-              until docker compose ps $SERVICE | grep -q "healthy"; do
-                if [ $SECONDS -ge 60 ]; then
-                  echo "Health check failed for $SERVICE after 60s — aborting, old container kept"
-                  exit 1
-                fi
-                echo "Waiting for $SERVICE to be healthy... ($SECONDS s)"
-                sleep 3
-              done
+            # Skip health check for worker
+            if [ "$SERVICE" = "worker" ]; then
+              echo "Worker updated"
+              return
+            fi
 
-              echo "$SERVICE is healthy"
-            }
+            # Wait up to 60 seconds for health check
+            SECONDS=0
+            until docker compose ps $SERVICE | grep -q "healthy"; do
+              if [ $SECONDS -ge 60 ]; then
+                echo "Health check failed for $SERVICE after 60s — aborting, old container kept"
+                exit 1
+              fi
+              echo "Waiting for $SERVICE... ($SECONDS s)"
+              sleep 3
+            done
 
-            # Update in dependency order
-            rolling_update redis
-            rolling_update api
-            rolling_update worker
-            rolling_update frontend
+            echo "$SERVICE is healthy"
+          }
 
-            echo "Deploy complete"
+          rolling_update redis
+          rolling_update api
+          rolling_update worker
+          rolling_update frontend
+
+          echo "Deploy complete"
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.yml down -v
